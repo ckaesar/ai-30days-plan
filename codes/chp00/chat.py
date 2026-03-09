@@ -12,13 +12,15 @@ load_dotenv()
 class QwenAPIClient:
     """Qwen API客户端示例 - 演示大模型API通用调用模式"""
     
-    def __init__(self, api_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"):
+    def __init__(self, api_key, base_url=None):
         """
         初始化客户端
         :param api_key: Qwen API密钥
         :param base_url: API基础地址（兼容OpenAI格式）
         """
         self.api_key = api_key
+        if base_url is None:
+            base_url = os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
         self.base_url = base_url
         self.headers = {
             "Authorization": f"Bearer {api_key}",
@@ -80,8 +82,18 @@ def demo_qwen_api():
         print("错误：未找到 QWEN_API_KEY 环境变量，请在 .env 文件中配置。")
         return
     
-    # 2. 初始化客户端
-    client = QwenAPIClient(api_key)
+    # 2. 读取基础配置并初始化客户端
+    base_url = os.getenv("LLM_BASE_URL")
+    model = os.getenv("LLM_MODEL", "qwen-max")
+    try:
+        temperature = float(os.getenv("LLM_TEMPERATURE", "0.3"))
+    except ValueError:
+        temperature = 0.3
+    try:
+        max_tokens = int(os.getenv("LLM_MAX_TOKENS", "200"))
+    except ValueError:
+        max_tokens = 200
+    client = QwenAPIClient(api_key, base_url)
     
     # 3. 构建对话消息
     messages = [
@@ -93,9 +105,9 @@ def demo_qwen_api():
     print("正在调用Qwen API...")
     response = client.chat_completion(
         messages=messages,
-        model="qwen-max",
-        temperature=0.3,  # 较低温度确保回答稳定
-        max_tokens=200
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens
     )
     
     # 5. 处理响应
