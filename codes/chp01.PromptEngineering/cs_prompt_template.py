@@ -1,3 +1,9 @@
+import os
+import requests
+from dotenv import load_dotenv
+load_dotenv()
+
+
 def build_prompt():
     role = (
         "角色设定：\n"
@@ -53,8 +59,73 @@ def build_prompt():
 
 
 def main():
-    prompt = build_prompt()
-    print(prompt)
+    api_key = os.getenv("QWEN_API_KEY")
+    if not api_key:
+        print("错误：未找到 QWEN_API_KEY，请在 .env 配置")
+        return
+    base_url = os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+    model = os.getenv("LLM_MODEL", "qwen-max")
+    try:
+        temperature = float(os.getenv("LLM_TEMPERATURE", "0.3"))
+    except ValueError:
+        temperature = 0.3
+    try:
+        max_tokens = int(os.getenv("LLM_MAX_TOKENS", "300"))
+    except ValueError:
+        max_tokens = 300
+
+    class Client:
+        def __init__(self, api_key, base_url):
+            self.base_url = base_url
+            self.headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        def chat(self, messages, model, temperature, max_tokens):
+            endpoint = f"{self.base_url}/chat/completions"
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "stream": False
+            }
+            try:
+                r = requests.post(endpoint, headers=self.headers, json=payload, timeout=30)
+                r.raise_for_status()
+                return r.json()
+            except requests.exceptions.RequestException as e:
+                print(f"API调用失败: {e}")
+                return None
+
+    client = Client(api_key, base_url)
+    system_prompt = build_prompt()
+    messages = [{"role": "system", "content": system_prompt}]
+    print("已加载客服系统提示，输入内容开始对话，输入 q 以退出。")
+    if os.getenv("NONINTERACTIVE_TEST") == "1":
+        messages.append({"role": "user", "content": "查询订单状态：订单号 123456"})
+        resp = client.chat(messages, model, temperature, max_tokens)
+        if resp and "choices" in resp:
+            content = resp["choices"][0].get("message", {}).get("content", "")
+            print(f"客服: {content}")
+        else:
+            print("客服: 暂时无法获取回复，请稍后重试。")
+        return
+    while True:
+        try:
+            user_text = input("你: ").strip()
+        except EOFError:
+            break
+        if not user_text:
+            continue
+        if user_text.lower() == "q":
+            print("会话结束。")
+            break
+        messages.append({"role": "user", "content": user_text})
+        resp = client.chat(messages, model, temperature, max_tokens)
+        if not resp or "choices" not in resp:
+            print("客服: 暂时无法获取回复，请稍后重试。")
+            continue
+        content = resp["choices"][0].get("message", {}).get("content", "")
+        print(f"客服: {content}")
+        messages.append({"role": "assistant", "content": content})
 
 
 if __name__ == "__main__":
