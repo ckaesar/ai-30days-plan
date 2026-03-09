@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI技能学习 - Day 2：Prompt Engineering（提示工程核心技巧）</title>
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+            height: 100vh;
+            display: flex;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        /* 左侧学习内容 */
+        .learning-content {
+            flex: 7;
+            background: white;
+            overflow-y: auto;
+            padding: 40px 50px;
+            border-right: 1px solid #e0e0e0;
+        }
+        
+        .learning-content h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .learning-content h2 {
+            color: #34495e;
+            font-size: 1.8rem;
+            margin: 30px 0 15px 0;
+            padding: 10px 0;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .learning-content h3 {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            margin: 20px 0 10px 0;
+        }
+        
+        .learning-content p {
+            margin: 15px 0;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+        
+        .learning-content ul, .learning-content ol {
+            margin: 15px 0 15px 25px;
+            font-size: 1.05rem;
+        }
+        
+        .learning-content li {
+            margin: 8px 0;
+        }
+        
+        /* 代码块容器，用于放置复制按钮 */
+        .code-block-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .copy-btn:hover {
+            opacity: 1;
+        }        .code-block-container pre {
+            background: #000000;
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border: 1px solid #333;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .learning-content code {
+            background: transparent;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #ffffff;
+        }
+        
+        .learning-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        
+        .learning-content th, .learning-content td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        .learning-content th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .learning-content tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .learning-content blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #5a6c7d;
+            font-style: italic;
+        }
+        
+        /* 选择题样式 */
+        .quiz-item {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .quiz-item h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .quiz-option {
+            margin: 8px 0;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quiz-option:hover {
+            background: #edf2f7;
+            border-color: #3498db;
+        }
+        
+        .quiz-option.selected {
+            background: #e3f2fd;
+            border-color: #3498db;
+        }
+        
+        .quiz-answer {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .quiz-answer.show {
+            display: block;
+        }
+        
+        .quiz-toggle {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .quiz-toggle:hover {
+            background: #2980b9;
+        }
+        
+        /* 右侧笔记栏 */
+        .notes-sidebar {
+            flex: 3;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+        
+        .notes-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 25px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-align: center;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .notes-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .notes-section {
+            margin-bottom: 30px;
+        }
+        
+        .notes-section h3 {
+            color: #3498db;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .notes-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: vertical;
+            background: #fcfdfe;
+            transition: border-color 0.2s;
+        }
+        
+        .notes-textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .notes-controls {
+            padding: 20px 25px;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .status-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .status-indicator.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .learning-content {
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .notes-sidebar {
+                height: 300px;
+                position: relative;
+            }
+        }
+        
+            
+        /* 语法高亮颜色定义 - 深色主题编辑器风格 */
+        .code-block-container pre .keyword {
+            color: #ffffff;  /* 关键字：浅蓝色 */
+        }
+        .code-block-container pre .comment {
+            color: #ffffff;  /* 注释：深绿色 */
+        }
+        .code-block-container pre .string {
+            color: #ffffff;  /* 字符串：橙色 */
+        }
+        .code-block-container pre .function {
+            color: #ffffff;  /* 函数名：黄色 */
+        }
+        .code-block-container pre .variable {
+            color: #ffffff;  /* 变量名：浅蓝色 */
+        }
+        .code-block-container pre .number {
+            color: #ffffff;  /* 数字：浅绿色 */
+        }
+        .code-block-container pre .operator {
+            color: #ffffff;  /* 操作符：浅灰色 */
+        }
+        .code-block-container pre .class-name {
+            color: #ffffff;  /* 类名：青色 */
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<!-- 左侧学习内容 -->
+<div class="learning-content">
+<h1>Day 2：Prompt Engineering - 提示工程核心技巧</h1>
+<p>欢迎来到AI技能学习计划的第二天！今天我们将深入探索Prompt Engineering（提示工程）——这是与大模型高效交互的核心技能。作为后端工程师，掌握这些技巧将极大提升你构建AI应用的能力。</p>
+
+<h2>一、概念引入：什么是Prompt Engineering？</h2>
+<p><strong>提示工程（Prompt Engineering）</strong>是通过精心设计和优化输入提示（Prompt），引导大模型产生高质量、稳定、符合预期的输出的技术。它本质上是一种"与AI高效沟通"的工程方法。</p>
+
+<p>为什么Prompt Engineering如此重要？</p>
+<ul>
+<li><strong>质量提升</strong>: 好的提示能显著提高输出准确性、相关性和一致性</li>
+<li><strong>成本优化</strong>: 减少无效Token消耗，提升任务完成效率</li>
+<li><strong>稳定性保障</strong>: 降低输出随机性，确保生产环境可靠性</li>
+<li><strong>场景适配</strong>: 让通用大模型适配特定业务需求</li>
+</ul>
+
+<h3>1.1 提示工程的核心原则</h3>
+<p>有效的提示通常遵循以下原则：</p>
+<ol>
+<li><strong>清晰明确</strong>: 指令要具体，避免模糊和多义</li>
+<li><strong>结构化</strong>: 使用格式约束（如JSON、XML）规范输出</li>
+<li><strong>上下文充足</strong>: 提供必要的背景信息和示例</li>
+<li><strong>角色设定</strong>: 赋予模型特定身份，引导其专业领域输出</li>
+</ol>
+
+<h2>二、核心技巧：六大Prompt Engineering方法</h2>
+<h3>2.1 角色设定（Role Playing）</h3>
+<p>通过明确的角色描述，让模型以特定身份思考：</p>
+<ul>
+<li><strong>基础格式</strong>: "你是一个资深的Python后端架构师..."</li>
+<li><strong>增强版本</strong>: "假设你是拥有10年经验的DevOps专家，擅长Kubernetes和微服务架构..."</li>
+</ul>
+
+<h3>2.2 思维链（Chain-of-Thought, CoT）</h3>
+<p>引导模型逐步思考，提升复杂问题解决能力：</p>
+<ul>
+<li><strong>基础CoT</strong>: "让我们逐步思考这个问题..."</li>
+<li><strong>Few-shot CoT</strong>: 提供带思考过程的示例</li>
+</ul>
+
+<h3>2.3 结构化输出约束</h3>
+<p>通过格式约束确保输出可程序化处理：</p>
+<ul>
+<li><strong>JSON格式</strong>: "请以JSON格式返回，包含name、score、reason三个字段"</li>
+<li><strong>XML格式</strong>: "使用XML格式，根节点为response"</li>
+<li><strong>Markdown表格</strong>: "用Markdown表格呈现对比结果"</li>
+</ul>
+
+<h3>2.4 Few-shot示例</h3>
+<p>提供少量示例，让模型快速学习任务模式：</p>
+<pre><code>示例1:
+输入: "苹果"
+输出: {"category": "水果", "color": "红色", "taste": "甜"}
+
+示例2:
+输入: "胡萝卜"
+输出: {"category": "蔬菜", "color": "橙色", "taste": "微甜"}
+
+现在请处理:
+输入: "香蕉"
+输出:</code></pre>
+
+<h3>2.5 参数调优技巧</h3>
+<p>结合API参数获得理想输出：</p>
+<table>
+<tr>
+<th>场景</th>
+<th>参数设置</th>
+<th>效果</th>
+</tr>
+<tr>
+<td>事实性问答</td>
+<td>temperature=0.1, top_p=0.9</td>
+<td>输出稳定，减少随机性</td>
+</tr>
+<tr>
+<td>创意写作</td>
+<td>temperature=0.8, top_p=0.95</td>
+<td>增加多样性，激发创意</td>
+</tr>
+<tr>
+<td>代码生成</td>
+<td>temperature=0.2, top_p=0.9</td>
+<td>保持代码正确性和一致性</td>
+</tr>
+</table>
+
+<h3>2.6 多轮对话上下文管理</h3>
+<p>有效管理对话历史，保持上下文一致性：</p>
+<ul>
+<li><strong>上下文窗口</strong>: 注意Token限制，适时总结或截断</li>
+<li><strong>系统消息</strong>: 使用system角色设定持久化指令</li>
+<li><strong>历史总结</strong>: 长对话中插入总结性消息，释放Token空间</li>
+</ul>
+
+<h2>三、代码示例：Qwen API提示工程实战</h2>
+<div class="code-block-container">
+<button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+<pre><code># Prompt Engineering实战：Qwen API高级提示技巧
+# 重点：展示提示工程技巧，而非模型特定内容
+
+import json
+import requests
+
+class PromptEngineeringDemo:
+    """提示工程演示类 - 展示多种高级提示技巧"""
+    
+    def __init__(self, api_key, base_url="https://dashscope.aliyun.com/api/v1"):
+        self.api_key = api_key
+        self.base_url = base_url
+        self.headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+    
+    def call_qwen_api(self, messages, model="qwen-max", temperature=0.7, max_tokens=500):
+        """调用Qwen API（通用封装）"""
+        endpoint = f"{self.base_url}/chat/completions"
+        
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False
+        }
+        
+        try:
+            response = requests.post(
+                endpoint,
+                headers=self.headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"API调用失败: {e}")
+            return None
+    
+    def demo_role_playing(self):
+        """技巧1：角色设定"""
+        print("=== 技巧1：角色设定示例 ===")
+        
+        messages = [
+            {
+                "role": "system",
+                "content": "你是一位资深的技术面试官，专注于后端开发和系统设计。你的风格是专业、严谨但友好。"
+            },
+            {
+                "role": "user",
+                "content": "请为一个有3年经验的Java工程师设计一道系统设计面试题，并给出评估要点。"
+            }
+        ]
+        
+        response = self.call_qwen_api(messages, temperature=0.3)
+        if response:
+            content = self.extract_content(response)
+            print(content)
+        return response
+    
+    def demo_chain_of_thought(self):
+        """技巧2：思维链提示"""
+        print("\n=== 技巧2：思维链示例 ===")
+        
+        messages = [
+            {
+                "role": "user",
+                "content": """请逐步思考以下问题：
+一家电商网站有1000万用户，日订单量10万。现在需要设计一个优惠券系统，支持：
+1. 多种优惠类型（满减、折扣、免运费）
+2. 精准投放（用户分层、商品分类）
+3. 防刷和限流
+
+请分步骤设计系统架构，并解释关键决策原因。"""
+            }
+        ]
+        
+        response = self.call_qwen_api(messages, temperature=0.2, max_tokens=800)
+        if response:
+            content = self.extract_content(response)
+            print(content)
+        return response
+    
+    def demo_structured_output(self):
+        """技巧3：结构化输出约束"""
+        print("\n=== 技巧3：结构化输出示例 ===")
+        
+        messages = [
+            {
+                "role": "system",
+                "content": "你是一个代码审查助手，擅长发现代码中的问题并提供改进建议。"
+            },
+            {
+                "role": "user",
+                "content": """请分析以下Python函数的潜在问题，并以JSON格式返回：
+{
+  "function_name": "process_data",
+  "issues": [
+    {
+      "type": "性能问题/安全漏洞/代码风格/潜在bug",
+      "description": "详细描述",
+      "severity": "high/medium/low",
+      "suggestion": "改进建议"
+    }
+  ],
+  "overall_score": 0-10
+}
+
+需要分析的函数：
+def process_data(data_list):
+    result = []
+    for item in data_list:
+        # 复杂处理逻辑
+        processed = item * 2 + 5
+        result.append(processed)
+    return result"""
+            }
+        ]
+        
+        response = self.call_qwen_api(messages, temperature=0.1, max_tokens=600)
+        if response:
+            content = self.extract_content(response)
+            print("结构化输出示例：")
+            print(content)
+            
+            # 尝试解析JSON验证格式正确性
+            try:
+                parsed = json.loads(content)
+                print(f"\n成功解析JSON，共发现 {len(parsed.get('issues', []))} 个问题")
+            except json.JSONDecodeError as e:
+                print(f"JSON解析失败: {e}")
+        return response
+    
+    def demo_few_shot_learning(self):
+        """技巧4：Few-shot学习"""
+        print("\n=== 技巧4：Few-shot学习示例 ===")
+        
+        messages = [
+            {
+                "role": "user",
+                "content": """请根据示例完成情感分析：
+
+示例1:
+输入: "这个产品太棒了，完全超出预期！"
+输出: {"sentiment": "positive", "confidence": 0.95, "reason": "包含积极词汇'太棒了''超出预期'"}
+
+示例2:
+输入: "服务很差，再也不会购买了。"
+输出: {"sentiment": "negative", "confidence": 0.88, "reason": "包含负面词汇'很差''不会再购买'"}
+
+现在请分析:
+输入: "质量一般，但价格还算合理。"
+输出:"""
+            }
+        ]
+        
+        response = self.call_qwen_api(messages, temperature=0.2, max_tokens=300)
+        if response:
+            content = self.extract_content(response)
+            print(content)
+        return response
+    
+    def demo_parameter_tuning(self):
+        """技巧5：参数调优对比"""
+        print("\n=== 技巧5：参数调优对比 ===")
+        
+        base_prompt = "请用Python实现一个快速排序算法"
+        
+        # 低temperature（稳定但缺乏创意）
+        print("1. temperature=0.1（稳定输出）:")
+        messages = [{"role": "user", "content": base_prompt}]
+        response_low = self.call_qwen_api(messages, temperature=0.1, max_tokens=400)
+        if response_low:
+            content = self.extract_content(response_low)
+            print(f"输出长度: {len(content)}字符")
+        
+        # 高temperature（多样但有风险）
+        print("\n2. temperature=0.9（创意输出）:")
+        response_high = self.call_qwen_api(messages, temperature=0.9, max_tokens=400)
+        if response_high:
+            content = self.extract_content(response_high)
+            print(f"输出长度: {len(content)}字符")
+        
+        return response_low, response_high
+    
+    def extract_content(self, api_response):
+        """从API响应提取内容"""
+        if not api_response or "choices" not in api_response:
+            return "响应解析失败"
+        
+        choice = api_response["choices"][0]
+        message = choice.get("message", {})
+        return message.get("content", "")
+    
+    def run_all_demos(self):
+        """运行所有演示"""
+        print("Prompt Engineering六大核心技巧演示")
+        print("=" * 50)
+        
+        # 注意：实际运行需要有效API密钥
+        print("注意：以下演示需要有效的Qwen API密钥")
+        print("当前为代码展示模式，实际调用已被注释")
+        
+        # 示例代码仅展示调用模式
+        # self.demo_role_playing()
+        # self.demo_chain_of_thought()
+        # self.demo_structured_output()
+        # self.demo_few_shot_learning()
+        # self.demo_parameter_tuning()
+        
+        print("\n演示代码展示完成。请配置API密钥以实际运行。")
+
+# 使用示例
+def main():
+    # 配置API密钥（从环境变量获取）
+    api_key = os.getenv("QWEN_API_KEY", "your_api_key_here")
+    
+    demo = PromptEngineeringDemo(api_key)
+    
+    # 运行演示（实际运行需要取消注释）
+    # demo.run_all_demos()
+    
+    print("提示工程示例代码加载完成。")
+    print("核心要点：")
+    print("1. 角色设定 → 专业领域聚焦")
+    print("2. 思维链 → 复杂问题分解")
+    print("3. 结构化输出 → 程序化处理")
+    print("4. Few-shot学习 → 快速任务适配")
+    print("5. 参数调优 → 输出质量控制")
+    print("6. 上下文管理 → 对话连贯性保障")
+
+if __name__ == "__main__":
+    main()</code></pre>
+</div>
+
+<h2>四、实战练习：提示工程优化挑战</h2>
+<ol>
+<li><strong>基础任务</strong>：将模糊提示优化为清晰提示
+<ul>
+<li>原始提示："帮我处理数据"</li>
+<li>优化目标：明确数据格式、处理逻辑、输出要求</li>
+</ul>
+</li>
+<li><strong>中级任务</strong>：设计一个客服场景的提示模板
+<ul>
+<li>要求：包含角色设定、话术规范、异常处理指引</li>
+<li>输出：完整的对话系统提示</li>
+</ul>
+</li>
+<li><strong>高级任务</strong>：构建一个代码审查的Few-shot提示
+<ul>
+<li>要求：提供3个代码审查示例（包含问题类型、描述、建议）</li>
+<li>目标：让模型学会一致的代码审查模式</li>
+</ul>
+</li>
+</ol>
+
+<h2>五、选择题测验（答案默认隐藏）</h2>
+<div class="quiz-item">
+<h4>1. 关于Prompt Engineering的核心价值，以下哪项描述最准确？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 主要是为了减少API调用次数</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 通过优化提示提升输出质量、稳定性和成本效率</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 让大模型能够处理原本不能处理的任务类型</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 主要用于美化输出格式，提高可读性</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：Prompt Engineering的核心价值在于：1）提升输出质量：通过清晰指令获得更准确、相关的回答；2）提高稳定性：降低随机性，确保生产环境可靠性；3）优化成本效率：减少无效Token消耗，提升任务完成效率。选项A是次要效果，选项C错误（Prompt Engineering不能扩展模型能力边界），选项D过于片面。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>2. 在角色设定（Role Playing）技巧中，以下哪项是最佳实践？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 使用模糊的身份描述，如"你是一个专家"</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 详细定义角色背景、专业领域和沟通风格</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 只在系统消息中设定一次角色，后续对话不再提及</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 为每个用户消息都重新设定不同角色</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：有效的角色设定应包含：1）具体身份（如"资深Python后端架构师"）；2）专业领域和资历（如"10年经验"）；3）沟通风格（如"专业、严谨但友好"）。选项A太模糊，选项C错误（长对话中可能需要强化角色），选项D会导致上下文混乱。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>3. 思维链（Chain-of-Thought）提示的主要作用是什么？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 增加输出长度，让回答看起来更详细</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 引导模型逐步推理，提升复杂问题解决能力</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 减少API调用的Token消耗</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 让模型跳过简单步骤，直接给出最终答案</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：思维链提示通过"让我们逐步思考..."等引导词，让模型展示推理过程，特别适用于需要多步推理的复杂问题（如数学题、系统设计、逻辑分析）。这能显著提升解决复杂问题的准确性。选项A是表面现象，选项C错误（CoT通常增加Token消耗），选项D与CoT目的相反。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>4. 关于结构化输出约束，以下哪项描述是正确的？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 结构化输出会限制模型的创造力，应避免使用</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 主要用于让输出看起来更美观整齐</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 通过JSON/XML等格式约束，确保输出可程序化处理</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 只适用于简单的数据提取任务</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：C</strong>
+<p><strong>解析</strong>：结构化输出（如JSON、XML、Markdown表格）的主要价值在于：1）程序化处理：便于后续代码解析和集成；2）一致性保障：确保关键字段完整；3）类型安全：明确数据类型和结构。选项A错误（结构化输出与创造力不冲突），选项B是次要效果，选项D错误（结构化输出适用于各种复杂任务）。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>5. Few-shot学习提示中，示例选择的关键原则是什么？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 示例越多越好，尽可能覆盖所有可能性</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 选择多样化、有代表性且高质量的示例</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 优先选择简单易懂的示例，避免复杂案例</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 随机选择示例，增加训练的随机性</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：Few-shot示例选择的关键是：1）代表性：覆盖任务的主要场景和边界情况；2）高质量：示例本身应正确、清晰、无歧义；3）一致性：示例间保持相同的格式和标准；4）适量：通常3-5个高质量示例优于大量低质量示例。选项A会导致Token浪费和示例冲突，选项C可能无法教会复杂任务，选项D会降低学习效果。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>6. temperature参数在Prompt Engineering中的作用是什么？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 控制API调用的响应时间</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 调整输出内容的专业程度</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 控制输出的随机性和创造性</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 限制模型的上下文记忆长度</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：C</strong>
+<p><strong>解析</strong>：temperature参数直接影响输出的随机性：1）低temperature（0.1-0.3）：输出稳定、可预测，适合事实性任务；2）中temperature（0.4-0.7）：平衡稳定性和创意；3）高temperature（0.8-1.0）：输出多样、有创意，但可能不稳定。选项A错误（不影响响应时间），选项B错误（专业程度由提示内容决定），选项D是上下文窗口限制。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>7. 在多轮对话中，有效的上下文管理策略不包括：</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 定期总结对话要点，减少历史Token占用</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 将所有历史消息完整保留，确保不丢失任何信息</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 适时清理无关或冗余的历史消息</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 在长对话中插入系统消息强化角色设定</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：有效的上下文管理策略包括：1）适时总结：释放Token空间；2）清理冗余：移除不必要的历史消息；3）强化角色：在长对话中重新提示系统指令；4）关注相关：保留与当前任务最相关的历史。选项B错误：完整保留所有历史消息会快速耗尽上下文窗口，导致后续对话质量下降或无法继续。</p>
+</div>
+</div>
+
+<h2>六、今日打卡任务</h2>
+<div class="quiz-item" style="background: #f0f9ff; border-left: 4px solid #3498db; margin-top: 30px;">
+<h3>核心收获（至少3点）</h3>
+<ul>
+<li>掌握Prompt Engineering六大核心技巧：<strong>角色设定、思维链、结构化输出、Few-shot学习、参数调优、上下文管理</strong></li>
+<li>理解不同场景下的提示优化策略和最佳实践</li>
+<li>能够设计有效的提示模板解决实际业务问题</li>
+<li>建立提示工程的系统性思维框架，从模糊需求到清晰指令的转化能力</li>
+</ul>
+</div><div class="timestamp" style="text-align: right; margin-top: 20px; color: #666; font-size: 0.9rem;">
+            更新版本生成时间：2026-03-06 18:45
+        </div></div>
+<!-- 右侧笔记栏 -->
+<div class="notes-sidebar">
+<div class="notes-header">学习笔记</div>
+<div class="notes-content">
+<div class="notes-section">
+<h3>核心理解</h3>
+<textarea class="notes-textarea" id="core-understanding" placeholder="记录你对大模型核心概念的理解...
+• 大模型的核心能力是什么？
+• Transformer架构的关键创新？
+• 预训练与微调的区别与联系？
+"></textarea>
+</div>
+<div class="notes-section">
+<h3>疑问</h3>
+<textarea class="notes-textarea" id="questions" placeholder="记录你在学习过程中产生的疑问...
+• 哪些概念还不太清晰？
+• API调用中可能遇到什么问题？
+• 实际应用中有哪些限制？
+"></textarea>
+</div>
+<div class="notes-section">
+<h3>思考</h3>
+<textarea class="notes-textarea" id="reflections" placeholder="记录你的思考与感悟...
+• 如何将这些概念应用到实际项目中？
+• 大模型技术对你工作可能产生的影响？
+• 后续学习中需要重点关注什么？
+"></textarea>
+</div>
+</div>
+<div class="notes-controls">
+<button class="btn btn-secondary" onclick="clearNotes()">清空笔记</button>
+<button class="btn btn-primary" onclick="saveNotes()">保存笔记</button>
+</div>
+</div>
+</div>
+<!-- 状态提示 -->
+<div class="status-indicator" id="statusIndicator">笔记已自动保存</div>
+<script>
+        // 自动保存功能
+        let autoSaveTimer;
+        const noteAreas = document.querySelectorAll('.notes-textarea');
+        
+        // 初始化：从localStorage加载笔记
+        function loadNotes() {
+            noteAreas.forEach(textarea => {
+                const saved = localStorage.getItem(textarea.id);
+                if (saved) {
+                    textarea.value = saved;
+                }
+            });
+        }
+        
+        // 自动保存
+        function startAutoSave() {
+            noteAreas.forEach(textarea => {
+                textarea.addEventListener('input', () => {
+                    clearTimeout(autoSaveTimer);
+                    autoSaveTimer = setTimeout(saveNotes, 3000);
+                    
+                    // 显示保存提示
+                    showStatusIndicator('正在保存...', '#3498db');
+                });
+            });
+        }
+        
+        // 保存笔记到localStorage
+        function saveNotes() {
+            noteAreas.forEach(textarea => {
+                localStorage.setItem(textarea.id, textarea.value);
+            });
+            
+            showStatusIndicator('笔记已自动保存', '#27ae60');
+        }
+        
+        // 清空笔记
+        function clearNotes() {
+            if (confirm('确定要清空所有笔记吗？此操作不可撤销。')) {
+                noteAreas.forEach(textarea => {
+                    textarea.value = '';
+                });
+                
+                // 同时清除localStorage
+                noteAreas.forEach(textarea => {
+                    localStorage.removeItem(textarea.id);
+                });
+                
+                showStatusIndicator('笔记已清空', '#e74c3c');
+            }
+        }
+        
+        // 显示状态提示
+        function showStatusIndicator(message, color) {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.textContent = message;
+            indicator.style.background = color;
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+        
+        // 代码复制功能
+        function copyCode(button) {
+            const pre = button.nextElementSibling;
+            const code = pre.textContent;
+            
+            // 尝试现代Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code)
+                    .then(() => {
+                        showCopySuccess(button);
+                    })
+                    .catch(err => {
+                        console.error('现代复制API失败:', err);
+                        // 回退到传统方法
+                        fallbackCopyText(code, button);
+                    });
+            } else {
+                // 使用传统方法
+                fallbackCopyText(code, button);
+            }
+        }
+        
+        function showCopySuccess(button) {
+            const originalText = button.textContent;
+            button.textContent = '已复制！';
+            button.style.background = '#27ae60';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#4a5568';
+            }, 2000);
+        }
+        
+        function fallbackCopyText(text, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(button);
+                } else {
+                    button.textContent = '复制失败';
+                    button.style.background = '#e74c3c';
+                }
+            } catch (err) {
+                console.error('传统复制方法失败:', err);
+                button.textContent = '复制失败';
+                button.style.background = '#e74c3c';
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+        
+        // 选择题功能
+        function toggleOption(optionElement) {
+            // 移除同一问题中其他选项的选中状态
+            const quizItem = optionElement.closest('.quiz-item');
+            const allOptions = quizItem.querySelectorAll('.quiz-option');
+            allOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // 选中当前选项
+            optionElement.classList.add('selected');
+        }
+        
+        function toggleAnswer(button) {
+            const answerDiv = button.nextElementSibling;
+            answerDiv.classList.toggle('show');
+            
+            if (answerDiv.classList.contains('show')) {
+                button.textContent = '隐藏答案';
+            } else {
+                button.textContent = '查看答案与解析';
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNotes();
+            startAutoSave();
+            // 添加键盘快捷键：Ctrl+S保存笔记
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveNotes();
+                }
+            });
+            
+            // 显示欢迎提示
+            setTimeout(() => {
+                showStatusIndicator('欢迎使用交互式学习简报！笔记每3秒自动保存。', '#3498db');
+            }, 1000);
+        });
+        
+        // 离开页面前的提醒
+        window.addEventListener('beforeunload', (e) => {
+            // 如果有未保存的更改（但我们已经自动保存了）
+            // 这里可以添加更复杂的检查逻辑
+        });
+    </script>
+</body>
+</html>

@@ -207,6 +207,15 @@ def process_data(data_list):
         
         print("注意：以下演示需要有效的Qwen API密钥")
         self.demo_role_playing()
+        print("----------------------------------------------------\n")
+        self.demo_chain_of_thought()
+        print("----------------------------------------------------\n")
+        self.demo_structured_output()
+        print("----------------------------------------------------\n")
+        self.demo_few_shot_learning()
+        print("----------------------------------------------------\n")
+        self.demo_parameter_tuning()
+
         print("\n演示完成。")
 
 def main():
