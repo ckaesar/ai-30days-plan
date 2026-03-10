@@ -23,9 +23,18 @@ LLM_MAX_TOKENS=200
 运行示例（以 chp00 为例）：
 
 ```
-python codes/chp00/chat.py
+python codes/chp00.baseModel/chat.py
 ```
 
 说明：
 - `.env` 已加入 `.gitignore`，请勿提交真实密钥。
 - 若切换到其他兼容厂商，仅需调整 `LLM_BASE_URL` 与 `LLM_MODEL` 即可配合新的 API Key 使用。
+
+## 学习计划（plans ↔ codes）
+约定：`DayN` 对应 `codes/chp0(N-1)`，后续章节按此规则依次递进。
+
+| Day | 学习主题 | 计划文档（plans） | 对应代码（codes） |
+| --- | --- | --- | --- |
+| Day1 | 大模型基础 | [plans/Day1-大模型基础.html](plans/Day1-大模型基础.html) | [codes/chp00.baseModel/](codes/chp00.baseModel/) |
+| Day2 | Prompt Engineering | [plans/Day2-Prompt-Engineering.html](plans/Day2-Prompt-Engineering.html) | [codes/chp01.PromptEngineering/](codes/chp01.PromptEngineering/) |
+| Day3 | Function Calling | [plans/Day3-Function-Calling.html](plans/Day3-Function-Calling.html) | [codes/chp02.FunctionCalling/](codes/chp02.FunctionCalling/) |
