@@ -1,6 +1,9 @@
 # ai-30days-plan
 AI技能提升三十天计划
 
+🚀 **学习入口**：[https://ckaesar.github.io/ai-30days-plan/](https://ckaesar.github.io/ai-30days-plan/)
+（在线访问学习计划与教程文档）
+
 ## 环境配置（.env）
 项目中的大模型调用使用 OpenAI 兼容接口方式，所有基础参数均从项目根目录下的 `.env` 文件读取，便于无侵入切换不同厂商与模型。
 
