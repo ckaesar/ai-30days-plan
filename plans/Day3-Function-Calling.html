@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI技能学习 - Day 3：Function Calling（函数调用与工具集成）</title>
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+            height: 100vh;
+            display: flex;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        /* 左侧学习内容 */
+        .learning-content {
+            flex: 7;
+            background: white;
+            overflow-y: auto;
+            padding: 40px 50px;
+            border-right: 1px solid #e0e0e0;
+        }
+        
+        .learning-content h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .learning-content h2 {
+            color: #34495e;
+            font-size: 1.8rem;
+            margin: 30px 0 15px 0;
+            padding: 10px 0;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .learning-content h3 {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            margin: 20px 0 10px 0;
+        }
+        
+        .learning-content p {
+            margin: 15px 0;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+        
+        .learning-content ul, .learning-content ol {
+            margin: 15px 0 15px 25px;
+            font-size: 1.05rem;
+        }
+        
+        .learning-content li {
+            margin: 8px 0;
+        }
+        
+        /* 代码块容器，用于放置复制按钮 */
+        .code-block-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .copy-btn:hover {
+            opacity: 1;
+        }        .code-block-container pre {
+            background: #000000;
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border: 1px solid #333;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .learning-content code {
+            background: transparent;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #ffffff;
+        }
+        
+        .learning-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        
+        .learning-content th, .learning-content td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        .learning-content th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .learning-content tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .learning-content blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #5a6c7d;
+            font-style: italic;
+        }
+        
+        /* 选择题样式 */
+        .quiz-item {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .quiz-item h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .quiz-option {
+            margin: 8px 0;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quiz-option:hover {
+            background: #edf2f7;
+            border-color: #3498db;
+        }
+        
+        .quiz-option.selected {
+            background: #e3f2fd;
+            border-color: #3498db;
+        }
+        
+        .quiz-answer {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .quiz-answer.show {
+            display: block;
+        }
+        
+        .quiz-toggle {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .quiz-toggle:hover {
+            background: #2980b9;
+        }
+        
+        /* 右侧笔记栏 */
+        .notes-sidebar {
+            flex: 3;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+        
+        .notes-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 25px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-align: center;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .notes-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .notes-section {
+            margin-bottom: 30px;
+        }
+        
+        .notes-section h3 {
+            color: #3498db;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .notes-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: vertical;
+            background: #fcfdfe;
+            transition: border-color 0.2s;
+        }
+        
+        .notes-textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .notes-controls {
+            padding: 20px 25px;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .status-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .status-indicator.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .learning-content {
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .notes-sidebar {
+                height: 300px;
+                position: relative;
+            }
+        }
+        
+            
+        /* 语法高亮颜色定义 - 深色主题编辑器风格 */
+        .code-block-container pre .keyword {
+            color: #ffffff;  /* 关键字：浅蓝色 */
+        }
+        .code-block-container pre .comment {
+            color: #ffffff;  /* 注释：深绿色 */
+        }
+        .code-block-container pre .string {
+            color: #ffffff;  /* 字符串：橙色 */
+        }
+        .code-block-container pre .function {
+            color: #ffffff;  /* 函数名：黄色 */
+        }
+        .code-block-container pre .variable {
+            color: #ffffff;  /* 变量名：浅蓝色 */
+        }
+        .code-block-container pre .number {
+            color: #ffffff;  /* 数字：浅绿色 */
+        }
+        .code-block-container pre .operator {
+            color: #ffffff;  /* 操作符：浅灰色 */
+        }
+        .code-block-container pre .class-name {
+            color: #ffffff;  /* 类名：青色 */
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<!-- 左侧学习内容 -->
+<div class="learning-content">
+<h1>Day 3：Function Calling - 工具调用与外部集成</h1>
+<p>欢迎来到AI技能学习的第三天！作为具备后端研发经验的工程师，今天我们将深入探索Function Calling（函数调用）这一核心技术，它使大模型能够与外部工具、API和数据源进行交互，极大地扩展了AI应用的能力边界。</p>
+
+<h2>一、概念引入：什么是Function Calling？</h2>
+<p><strong>Function Calling</strong>（也称为Tool Calling）是一种让大语言模型智能调用外部函数或工具的能力。它不是让模型直接执行操作，而是让模型理解何时需要调用外部工具，并生成正确的调用参数。</p>
+
+<p>Function Calling的核心价值在于：</p>
+<ul>
+<li><strong>扩展模型能力</strong>：让大模型突破知识截止日期的限制，访问实时信息</li>
+<li><strong>连接现实世界</strong>：集成API、数据库、计算工具等外部系统</li>
+<li><strong>增强事实性</strong>：基于真实数据生成回答，减少幻觉</li>
+<li><strong>标准化交互</strong>：提供结构化、可预测的工具调用接口</li>
+</ul>
+
+<h3>1.1 工作原理：三阶段执行模型</h3>
+<p>Function Calling遵循清晰的三阶段执行流程：</p>
+<ol>
+<li><strong>规划阶段</strong>：模型分析用户请求，决定是否需要调用工具，选择合适工具并生成参数</li>
+<li><strong>执行阶段</strong>：你的应用程序接收工具调用描述，实际执行外部函数并获取结果</li>
+<li><strong>响应阶段</strong>：模型将工具执行结果融入自然语言回答，呈现给用户</li>
+</ol>
+
+<p>关键概念：<strong>模型只生成调用描述，不执行实际操作</strong>。这确保了安全性和可控性。</p>
+
+<h3>1.2 应用场景：五大典型用例</h3>
+<p>Function Calling在实际项目中广泛应用：</p>
+<ul>
+<li><strong>工具调用</strong>：天气查询、计算器、单位转换等基础工具</li>
+<li><strong>API集成</strong>：连接CRM、ERP、电商平台等业务系统</li>
+<li><strong>数据提取</strong>：从非结构化文本中提取结构化信息</li>
+<li><strong>实时信息</strong>：获取股票价格、新闻动态、航班状态等</li>
+<li><strong>复杂工作流</strong>：多步骤任务分解与协调</li>
+</ul>
+
+<h2>二、实现机制：函数描述与调用流程</h2>
+<h3>2.1 函数描述规范（JSON Schema）</h3>
+<p>Function Calling使用JSON Schema描述函数接口，包含三个核心要素：</p>
+<ol>
+<li><strong>函数名称</strong>：唯一标识符，用于调用匹配</li>
+<li><strong>功能描述</strong>：自然语言说明，帮助模型理解何时使用此函数</li>
+<li><strong>参数规范</strong>：定义参数名称、类型、描述、是否必需</li>
+</ol>
+
+<h3>2.2 主流API格式对比</h3>
+<table>
+<tr>
+<th>提供商</th>
+<th>格式特点</th>
+<th>调用响应</th>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td>独立tool_calls字段，参数为JSON字符串</td>
+<td>包含function_call对象的列表</td>
+</tr>
+<tr>
+<td>Anthropic</td>
+<td>内嵌在content中的结构化数据</td>
+<td>tool_use类型的消息块</td>
+</tr>
+<tr>
+<td>DashScope</td>
+<td>兼容OpenAI格式，支持标准function calling</td>
+<td>与OpenAI相同的结构</td>
+</tr>
+</table>
+
+<h3>2.3 完整调用流程</h3>
+<p>一个标准的Function Calling流程包含以下步骤：</p>
+<ol>
+<li><strong>定义工具列表</strong>：创建函数描述JSON Schema</li>
+<li><strong>绑定工具到模型</strong>：通过API将工具描述发送给模型</li>
+<li><strong>模型决策</strong>：模型判断是否需要调用工具，生成调用参数</li>
+<li><strong>执行外部函数</strong>：应用程序解析参数，调用实际函数</li>
+<li><strong>返回结果</strong>：将执行结果格式化为模型可理解的格式</li>
+<li><strong>生成最终回答</strong>：模型基于工具结果生成自然语言响应</li>
+</ol>
+
+<h2>三、代码示例：Qwen API Function Calling实战</h2>
+<h3>3.1 基础工具调用：天气查询</h3>
+<div class="code-block-container">
+<button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+<pre><code># Function Calling基础示例：天气查询工具
+import json
+from typing import Dict, Any
+import requests
+
+class QwenFunctionCallingDemo:
+    """Qwen Function Calling演示类"""
+    
+    def __init__(self, api_key: str):
+        """初始化Qwen客户端"""
+        self.api_key = api_key
+        self.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        self.headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+    
+    def define_weather_tool(self) -> Dict[str, Any]:
+        """定义天气查询工具"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "get_current_weather",
+                "description": "获取指定城市的当前天气信息",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "城市名称，例如：北京、上海、广州"
+                        },
+                        "unit": {
+                            "type": "string",
+                            "enum": ["celsius", "fahrenheit"],
+                            "description": "温度单位，摄氏度或华氏度"
+                        }
+                    },
+                    "required": ["location"],
+                    "additionalProperties": False
+                }
+            }
+        }
+    
+    def call_qwen_with_tools(self, user_query: str, tools: list) -> Dict[str, Any]:
+        """调用Qwen API（支持工具调用）"""
+        endpoint = f"{self.base_url}/chat/completions"
+        
+        payload = {
+            "model": "qwen-max",
+            "messages": [{"role": "user", "content": user_query}],
+            "tools": tools,
+            "tool_choice": "auto",  # 自动判断是否调用工具
+            "temperature": 0.3,     # 较低温度确保参数生成稳定
+            "max_tokens": 500
+        }
+        
+        try:
+            response = requests.post(
+                endpoint,
+                headers=self.headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"API调用失败: {e}")
+            return None
+    
+    def execute_weather_function(self, location: str, unit: str = "celsius") -> str:
+        """模拟执行天气查询函数（实际项目中会调用真实API）"""
+        # 这里模拟返回固定数据，实际应调用天气API
+        weather_data = {
+            "北京": {"temperature": 15, "condition": "晴朗", "humidity": "45%"},
+            "上海": {"temperature": 18, "condition": "多云", "humidity": "65%"},
+            "广州": {"temperature": 25, "condition": "小雨", "humidity": "85%"}
+        }
+        
+        if location in weather_data:
+            data = weather_data[location]
+            return json.dumps({
+                "location": location,
+                "temperature": data["temperature"],
+                "unit": unit,
+                "condition": data["condition"],
+                "humidity": data["humidity"],
+                "timestamp": datetime.now().isoformat()
+            })
+        else:
+            return json.dumps({
+                "location": location,
+                "temperature": "未知",
+                "unit": unit,
+                "condition": "数据不可用",
+                "error": "城市不支持"
+            })
+    
+    def demo_basic_function_calling(self) -> None:
+        """演示基础Function Calling流程"""
+        print("=== 基础Function Calling演示 ===")
+        
+        # 1. 定义工具
+        weather_tool = self.define_weather_tool()
+        tools = [weather_tool]
+        
+        # 2. 用户查询
+        user_query = "北京今天的天气怎么样？"
+        print(f"用户查询: {user_query}")
+        
+        # 3. 调用Qwen API
+        response = self.call_qwen_with_tools(user_query, tools)
+        if not response:
+            print("API调用失败")
+            return
+        
+        # 4. 检查是否有工具调用
+        message = response["choices"][0]["message"]
+        if "tool_calls" in message:
+            tool_call = message["tool_calls"][0]
+            function_name = tool_call["function"]["name"]
+            arguments = json.loads(tool_call["function"]["arguments"])
+            
+            print(f"模型决定调用工具: {function_name}")
+            print(f"生成参数: {arguments}")
+            
+            # 5. 执行实际函数
+            if function_name == "get_current_weather":
+                location = arguments.get("location")
+                unit = arguments.get("unit", "celsius")
+                weather_result = self.execute_weather_function(location, unit)
+                print(f"工具执行结果: {weather_result}")
+                
+                # 6. 将结果发送回模型获取最终回答
+                second_payload = {
+                    "model": "qwen-max",
+                    "messages": [
+                        {"role": "user", "content": user_query},
+                        {"role": "assistant", "content": None, "tool_calls": [tool_call]},
+                        {"role": "tool", "content": weather_result, "tool_call_id": tool_call["id"]}
+                    ],
+                    "temperature": 0.7
+                }
+                
+                final_response = requests.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=self.headers,
+                    json=second_payload
+                )
+                
+                if final_response.status_code == 200:
+                    final_content = final_response.json()["choices"][0]["message"]["content"]
+                    print(f"最终回答: {final_content}")
+        else:
+            print("模型决定不调用工具，直接回答")</code></pre>
+</div>
+
+<h3>3.2 多函数选择与参数提取</h3>
+<div class="code-block-container">
+<button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+<pre><code># 多函数选择演示
+class MultiFunctionDemo:
+    """多函数选择演示"""
+    
+    def define_multiple_tools(self) -> list:
+        """定义多个工具"""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": "search_web",
+                    "description": "搜索最新网页信息",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string", "description": "搜索关键词"},
+                            "max_results": {"type": "integer", "description": "最大结果数"}
+                        },
+                        "required": ["query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "calculate",
+                    "description": "数学计算工具",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "expression": {"type": "string", "description": "数学表达式"}
+                        },
+                        "required": ["expression"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "convert_units",
+                    "description": "单位转换工具",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "value": {"type": "number", "description": "数值"},
+                            "from_unit": {"type": "string", "description": "原单位"},
+                            "to_unit": {"type": "string", "description": "目标单位"}
+                        },
+                        "required": ["value", "from_unit", "to_unit"]
+                    }
+                }
+            }
+        ]
+    
+    def demo_multi_function_selection(self):
+        """演示多函数选择"""
+        tools = self.define_multiple_tools()
+        
+        test_queries = [
+            "计算圆的面积，半径是5厘米",
+            "今天比特币价格多少？",
+            "把100华氏度转换成摄氏度",
+            "请帮我写一篇关于AI伦理的文章"
+        ]
+        
+        print("=== 多函数选择演示 ===")
+        for query in test_queries:
+            print(f"用户查询: {query}")
+            
+            # 模拟模型决策
+            if "计算" in query or "面积" in query:
+                selected_tool = "calculate"
+            elif "价格" in query or "比特币" in query:
+                selected_tool = "search_web"
+            elif "转换" in query or "摄氏度" in query:
+                selected_tool = "convert_units"
+            else:
+                selected_tool = None
+            
+            if selected_tool:
+                print(f"→ 模型选择工具: {selected_tool}")
+            else:
+                print("→ 模型决定直接回答")
+            print()</code></pre>
+</div>
+
+<h2>四、实战练习要求</h2>
+<ol>
+<li><strong>基础练习：创建天气查询助手</strong>
+    <ul>
+    <li>使用Qwen API定义get_weather函数</li>
+    <li>实现完整的Function Calling流程</li>
+    <li>支持多个城市查询和温度单位选择</li>
+    </ul>
+</li>
+<li><strong>中级练习：构建多功能计算器</strong>
+    <ul>
+    <li>定义add、subtract、multiply、divide等数学函数</li>
+    <li>支持复杂表达式解析</li>
+    <li>实现错误处理</li>
+    </ul>
+</li>
+<li><strong>高级练习：电商订单处理系统</strong>
+    <ul>
+    <li>定义create_order、update_order、cancel_order等函数</li>
+    <li>实现嵌套JSON参数结构验证</li>
+    <li>添加事务处理和回滚机制</li>
+    </ul>
+</li>
+</ol>
+
+<h2>五、选择题测验（答案默认隐藏）</h2>
+<div class="quiz-item">
+<h4>1. Function Calling的核心价值是什么？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 让大模型直接执行外部系统操作</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 扩展模型能力，连接外部工具和实时数据</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 替代传统API调用，简化开发流程</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 提高模型训练效率和准确率</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：Function Calling的核心价值在于扩展大模型的能力边界，使其能够与外部工具、API和数据源进行交互。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>2. 在Function Calling流程中，模型的角色是什么？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 直接执行外部函数并返回结果</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 分析用户需求，生成工具调用参数</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 管理应用程序的资源分配和调度</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 验证工具执行结果的安全性</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：模型的角色是分析用户需求，决定是否需要调用工具，并生成正确的调用参数。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>3. 以下哪种是Function Calling的正确JSON Schema结构？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. {"name": "get_weather", "description": "天气查询", "params": ["city"]}</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. {"function": "weather", "args": {"city": "string"}, "required": true}</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. {"name": "get_weather", "description": "天气查询", "parameters": {"type": "object", "properties": {"city": {"type": "string"}}}}</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. {"tool": {"name": "weather", "input": "city:string", "output": "json"}}</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：C</strong>
+<p><strong>解析</strong>：正确的JSON Schema应包含name、description和parameters等字段。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>4. 在处理Function Calling错误时，以下哪种策略最合适？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 直接向用户显示原始错误信息</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 忽略错误，继续执行其他函数</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 重试机制配合友好的降级响应</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 立即停止所有服务并通知管理员</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：C</strong>
+<p><strong>解析</strong>：最佳策略是重试机制配合友好的降级响应。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>5. 关于流式Function Calling，以下描述正确的是？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 只能在工具执行完成后开始流式输出</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 支持实时展示模型推理和工具调用过程</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 相比非流式模式有更高的延迟</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 无法处理并行工具调用</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：流式Function Calling支持实时展示模型推理过程。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>6. 在定义Function Calling工具时，以下哪项描述最重要？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 函数名称应该尽可能简短</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 参数类型可以省略，模型会自动推断</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 功能描述应该清晰准确，帮助模型理解何时调用</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 所有参数都应该标记为required</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：C</strong>
+<p><strong>解析</strong>：功能描述的质量直接影响模型选择工具的准确性。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>7. 对于嵌套JSON参数结构，最佳实践是什么？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 避免使用嵌套结构，全部展平为一级参数</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 仅在必要时使用嵌套，并清晰定义每一层的结构</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 让模型自由发挥，不需要预定义结构</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 使用XML替代JSON，结构更清晰</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：最佳实践是仅在必要时使用嵌套，并清晰定义每一层的结构。</p>
+</div>
+</div>
+
+<h2>六、今日打卡任务</h2>
+<div class="quiz-item" style="background: #f0f9ff; border-left: 4px solid #3498db; margin-top: 30px;">
+<h3>核心收获（至少3点）</h3>
+<ul>
+<li>理解Function Calling的<strong>三阶段执行模型</strong></li>
+<li>掌握<strong>JSON Schema定义规范</strong></li>
+<li>学会<strong>错误处理与降级策略</strong></li>
+<li>了解<strong>流式响应优势</strong></li>
+</ul>
+</div>
+
+<div class="timestamp" style="text-align: right; margin-top: 20px; color: #666; font-size: 0.9rem;">
+            更新版本生成时间：2026-03-06 19:16
+        </div>
+</div><!-- 右侧笔记栏 -->
+<div class="notes-sidebar">
+<div class="notes-header">学习笔记</div>
+<div class="notes-content">
+<div class="notes-section">
+<h3>核心理解</h3>
+<textarea class="notes-textarea" id="core-understanding" placeholder="记录你对大模型核心概念的理解...
+• 大模型的核心能力是什么？
+• Transformer架构的关键创新？
+• 预训练与微调的区别与联系？
+"></textarea>
+</div>
+<div class="notes-section">
+<h3>疑问</h3>
+<textarea class="notes-textarea" id="questions" placeholder="记录你在学习过程中产生的疑问...
+• 哪些概念还不太清晰？
+• API调用中可能遇到什么问题？
+• 实际应用中有哪些限制？
+"></textarea>
+</div>
+<div class="notes-section">
+<h3>思考</h3>
+<textarea class="notes-textarea" id="reflections" placeholder="记录你的思考与感悟...
+• 如何将这些概念应用到实际项目中？
+• 大模型技术对你工作可能产生的影响？
+• 后续学习中需要重点关注什么？
+"></textarea>
+</div>
+</div>
+<div class="notes-controls">
+<button class="btn btn-secondary" onclick="clearNotes()">清空笔记</button>
+<button class="btn btn-primary" onclick="saveNotes()">保存笔记</button>
+</div>
+</div>
+</div>
+<!-- 状态提示 -->
+<div class="status-indicator" id="statusIndicator">笔记已自动保存</div>
+<script>
+        // 自动保存功能
+        let autoSaveTimer;
+        const noteAreas = document.querySelectorAll('.notes-textarea');
+        
+        // 初始化：从localStorage加载笔记
+        function loadNotes() {
+            noteAreas.forEach(textarea => {
+                const saved = localStorage.getItem(textarea.id);
+                if (saved) {
+                    textarea.value = saved;
+                }
+            });
+        }
+        
+        // 自动保存
+        function startAutoSave() {
+            noteAreas.forEach(textarea => {
+                textarea.addEventListener('input', () => {
+                    clearTimeout(autoSaveTimer);
+                    autoSaveTimer = setTimeout(saveNotes, 3000);
+                    
+                    // 显示保存提示
+                    showStatusIndicator('正在保存...', '#3498db');
+                });
+            });
+        }
+        
+        // 保存笔记到localStorage
+        function saveNotes() {
+            noteAreas.forEach(textarea => {
+                localStorage.setItem(textarea.id, textarea.value);
+            });
+            
+            showStatusIndicator('笔记已自动保存', '#27ae60');
+        }
+        
+        // 清空笔记
+        function clearNotes() {
+            if (confirm('确定要清空所有笔记吗？此操作不可撤销。')) {
+                noteAreas.forEach(textarea => {
+                    textarea.value = '';
+                });
+                
+                // 同时清除localStorage
+                noteAreas.forEach(textarea => {
+                    localStorage.removeItem(textarea.id);
+                });
+                
+                showStatusIndicator('笔记已清空', '#e74c3c');
+            }
+        }
+        
+        // 显示状态提示
+        function showStatusIndicator(message, color) {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.textContent = message;
+            indicator.style.background = color;
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+        
+        // 代码复制功能
+        function copyCode(button) {
+            const pre = button.nextElementSibling;
+            const code = pre.textContent;
+            
+            // 尝试现代Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code)
+                    .then(() => {
+                        showCopySuccess(button);
+                    })
+                    .catch(err => {
+                        console.error('现代复制API失败:', err);
+                        // 回退到传统方法
+                        fallbackCopyText(code, button);
+                    });
+            } else {
+                // 使用传统方法
+                fallbackCopyText(code, button);
+            }
+        }
+        
+        function showCopySuccess(button) {
+            const originalText = button.textContent;
+            button.textContent = '已复制！';
+            button.style.background = '#27ae60';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#4a5568';
+            }, 2000);
+        }
+        
+        function fallbackCopyText(text, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(button);
+                } else {
+                    button.textContent = '复制失败';
+                    button.style.background = '#e74c3c';
+                }
+            } catch (err) {
+                console.error('传统复制方法失败:', err);
+                button.textContent = '复制失败';
+                button.style.background = '#e74c3c';
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+        
+        // 选择题功能
+        function toggleOption(optionElement) {
+            // 移除同一问题中其他选项的选中状态
+            const quizItem = optionElement.closest('.quiz-item');
+            const allOptions = quizItem.querySelectorAll('.quiz-option');
+            allOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // 选中当前选项
+            optionElement.classList.add('selected');
+        }
+        
+        function toggleAnswer(button) {
+            const answerDiv = button.nextElementSibling;
+            answerDiv.classList.toggle('show');
+            
+            if (answerDiv.classList.contains('show')) {
+                button.textContent = '隐藏答案';
+            } else {
+                button.textContent = '查看答案与解析';
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNotes();
+            startAutoSave();
+            // 添加键盘快捷键：Ctrl+S保存笔记
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveNotes();
+                }
+            });
+            
+            // 显示欢迎提示
+            setTimeout(() => {
+                showStatusIndicator('欢迎使用交互式学习简报！笔记每3秒自动保存。', '#3498db');
+            }, 1000);
+        });
+        
+        // 离开页面前的提醒
+        window.addEventListener('beforeunload', (e) => {
+            // 如果有未保存的更改（但我们已经自动保存了）
+            // 这里可以添加更复杂的检查逻辑
+        });
+    </script>
+</body>
+</html>
