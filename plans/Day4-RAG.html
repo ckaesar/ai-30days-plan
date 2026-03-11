@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI技能学习 - Day 3：Function Calling（函数调用与工具集成）</title>
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+            height: 100vh;
+            display: flex;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        /* 左侧学习内容 */
+        .learning-content {
+            flex: 7;
+            background: white;
+            overflow-y: auto;
+            padding: 40px 50px;
+            border-right: 1px solid #e0e0e0;
+        }
+        
+        .learning-content h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .learning-content h2 {
+            color: #34495e;
+            font-size: 1.8rem;
+            margin: 30px 0 15px 0;
+            padding: 10px 0;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .learning-content h3 {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            margin: 20px 0 10px 0;
+        }
+        
+        .learning-content p {
+            margin: 15px 0;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+        
+        .learning-content ul, .learning-content ol {
+            margin: 15px 0 15px 25px;
+            font-size: 1.05rem;
+        }
+        
+        .learning-content li {
+            margin: 8px 0;
+        }
+        
+        /* 代码块容器，用于放置复制按钮 */
+        .code-block-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .copy-btn:hover {
+            opacity: 1;
+        }        .code-block-container pre {
+            background: #000000;
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border: 1px solid #333;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .learning-content code {
+            background: transparent;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #ffffff;
+        }
+        
+        .learning-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        
+        .learning-content th, .learning-content td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        .learning-content th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .learning-content tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .learning-content blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #5a6c7d;
+            font-style: italic;
+        }
+        
+        /* 选择题样式 */
+        .quiz-item {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .quiz-item h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .quiz-option {
+            margin: 8px 0;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quiz-option:hover {
+            background: #edf2f7;
+            border-color: #3498db;
+        }
+        
+        .quiz-option.selected {
+            background: #e3f2fd;
+            border-color: #3498db;
+        }
+        
+        .quiz-answer {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .quiz-answer.show {
+            display: block;
+        }
+        
+        .quiz-toggle {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .quiz-toggle:hover {
+            background: #2980b9;
+        }
+        
+        /* 右侧笔记栏 */
+        .notes-sidebar {
+            flex: 3;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+        
+        .notes-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 25px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-align: center;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .notes-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .notes-section {
+            margin-bottom: 30px;
+        }
+        
+        .notes-section h3 {
+            color: #3498db;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .notes-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: vertical;
+            background: #fcfdfe;
+            transition: border-color 0.2s;
+        }
+        
+        .notes-textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .notes-controls {
+            padding: 20px 25px;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .status-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .status-indicator.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .learning-content {
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .notes-sidebar {
+                height: 300px;
+                position: relative;
+            }
+        }
+        
+            
+        /* 语法高亮颜色定义 - 深色主题编辑器风格 */
+        .code-block-container pre .keyword {
+            color: #ffffff;  /* 关键字：浅蓝色 */
+        }
+        .code-block-container pre .comment {
+            color: #ffffff;  /* 注释：深绿色 */
+        }
+        .code-block-container pre .string {
+            color: #ffffff;  /* 字符串：橙色 */
+        }
+        .code-block-container pre .function {
+            color: #ffffff;  /* 函数名：黄色 */
+        }
+        .code-block-container pre .variable {
+            color: #ffffff;  /* 变量名：浅蓝色 */
+        }
+        .code-block-container pre .number {
+            color: #ffffff;  /* 数字：浅绿色 */
+        }
+        .code-block-container pre .operator {
+            color: #ffffff;  /* 操作符：浅灰色 */
+        }
+        .code-block-container pre .class-name {
+            color: #ffffff;  /* 类名：青色 */
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<!-- 左侧学习内容 -->
+
+<div class="learning-content">
+<h1>Day 4：RAG（检索增强生成）- 知识增强与实时信息整合</h1>
+<p>欢迎来到AI技能学习的第四天！作为具备后端研发经验的工程师，今天我们将深入探索RAG（检索增强生成）这一核心技术，它使大模型能够突破训练数据的时间限制，整合外部知识库和实时信息，生成准确、可验证的回答。</p>
+
+<h2>一、概念引入：什么是RAG？</h2>
+<p><strong>RAG（Retrieval-Augmented Generation，检索增强生成）</strong>是一种将信息检索系统与大语言模型相结合的技术框架。其核心思想是：在生成回答前，先从外部知识库中检索相关信息，然后将检索结果作为上下文提供给大模型，从而生成基于真实信息的准确回答。</p>
+
+<p>RAG的核心价值在于：</p>
+<ul>
+<li><strong>突破知识截止日期</strong>：让大模型能够访问最新信息和私有数据</li>
+<li><strong>减少幻觉风险</strong>：基于真实文档生成回答，提高事实准确性</li>
+<li><strong>增强可解释性</strong>：保留信息来源，支持答案溯源和验证</li>
+<li><strong>降低使用成本</strong>：小模型结合高质量检索，可匹敌大模型效果</li>
+</ul>
+
+<h3>1.1 传统LLM的局限性</h3>
+<p>传统大语言模型存在两个关键限制：</p>
+<ol>
+<li><strong>知识截止问题</strong>：模型训练数据有时间边界，无法回答最新信息</li>
+<li><strong>幻觉风险</strong>：对未知或模糊信息容易编造看似合理但错误的答案</li>
+<li><strong>私有数据不可访问</strong>：企业内部文档、专有知识无法被模型直接使用</li>
+</ol>
+
+<h3>1.2 RAG与传统检索的本质区别</h3>
+<table>
+<tr>
+<th>维度</th>
+<th>传统检索系统</th>
+<th>RAG系统</th>
+</tr>
+<tr>
+<td>核心目标</td>
+<td>提供文档列表</td>
+<td>直接生成自然语言回答</td>
+</tr>
+<tr>
+<td>理解深度</td>
+<td>关键词匹配</td>
+<td>语义级理解与推理</td>
+</tr>
+<tr>
+<td>知识整合</td>
+<td>文档堆砌</td>
+<td>多文档信息融合</td>
+</tr>
+<tr>
+<td>交互方式</td>
+<td>被动查询</td>
+<td>主动问答对话</td>
+</tr>
+</table>
+
+<h2>二、工作原理：四阶段执行流程</h2>
+<p>RAG系统遵循清晰的四阶段执行流程：</p>
+
+<h3>2.1 第一阶段：文档预处理与索引（离线）</h3>
+<p>将原始文档转化为可检索的知识片段：</p>
+<ol>
+<li><strong>文档加载</strong>：从PDF、Word、Markdown等格式提取文本</li>
+<li><strong>文本分块（Chunking）</strong>：将长文档切分为适当大小的片段（通常500-1000字符）</li>
+<li><strong>向量化（Embedding）</strong>：使用嵌入模型将文本转为高维向量表示</li>
+<li><strong>存储索引</strong>：将向量存入向量数据库，建立高效检索索引</li>
+</ol>
+
+<h3>2.2 第二阶段：查询处理与检索（在线）</h3>
+<p>用户提问时的实时处理流程：</p>
+<ol>
+<li><strong>查询向量化</strong>：将用户问题转换为向量表示</li>
+<li><strong>相似度匹配</strong>：在向量空间中查找最相似的Top-K个文档片段</li>
+<li><strong>重排序优化</strong>：使用交叉编码器（Cross-Encoder）对候选结果精细排序</li>
+</ol>
+
+<h3>2.3 第三阶段：上下文增强</h3>
+<p>将检索结果与原始问题组合，构建增强提示：</p>
+<div class="code-block-container">
+<button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+<pre><code># 增强提示模板示例
+enhanced_prompt = f"""
+你是一个专业的AI助手，请基于以下检索到的信息回答问题：
+
+【检索到的相关内容】
+{retrieved_context}
+
+【用户问题】
+{user_question}
+
+要求：
+1. 严格基于检索到的信息回答，不要编造
+2. 如果信息不足，明确说明"根据现有信息无法回答"
+3. 回答简洁准确，必要时标注信息来源
+"""
+</code></pre>
+</div>
+
+<h3>2.4 第四阶段：增强生成</h3>
+<p>大模型基于增强提示生成最终答案，实现：</p>
+<ul>
+<li><strong>事实准确性</strong>：回答基于真实文档信息</li>
+<li><strong>实时性</strong>：可整合最新数据和私有知识</li>
+<li><strong>可验证性</strong>：保留引用来源，支持答案溯源</li>
+</ul>
+
+<h2>三、技术栈：核心组件与选型指南</h2>
+<h3>3.1 向量数据库对比</h3>
+<table>
+<tr>
+<th>数据库</th>
+<th>类型</th>
+<th>适用场景</th>
+<th>特点</th>
+</tr>
+<tr>
+<td><strong>FAISS</strong></td>
+<td>库（非数据库）</td>
+<td>快速原型、大规模离线索引</td>
+<td>性能极高，支持GPU加速，缺乏元数据原生支持</td>
+</tr>
+<tr>
+<td><strong>Chroma</strong></td>
+<td>轻量级向量数据库</td>
+<td>中小型项目、快速开发</td>
+<td>API简洁，与LangChain深度集成，开箱即用</td>
+</tr>
+<tr>
+<td><strong>Milvus</strong></td>
+<td>分布式向量数据库</td>
+<td>大规模生产环境、企业级应用</td>
+<td>支持水平扩展，功能全面，部署复杂度高</td>
+</tr>
+<tr>
+<td><strong>Pinecone</strong></td>
+<td>托管向量数据库</td>
+<td>快速上线、无需运维</td>
+<td>全托管SaaS，易用性强，成本较高</td>
+</tr>
+<tr>
+<td><strong>Qdrant</strong></td>
+<td>向量数据库</td>
+<td>中大型应用、生产部署</td>
+<td>性能优秀，支持复杂过滤，开源+云服务双模式</td>
+</tr>
+</table>
+
+<h3>3.2 嵌入模型选择</h3>
+<ul>
+<li><strong>通用场景</strong>：text-embedding-3-small（OpenAI）、BGE-large-zh（中文优化）</li>
+<li><strong>多语言支持</strong>：E5、Voyage-3</li>
+<li><strong>本地部署</strong>：all-MiniLM-L6-v2、BGE-small-zh</li>
+</ul>
+
+<h3>3.3 检索策略演进</h3>
+<ol>
+<li><strong>基础RAG</strong>：单一向量检索，基于余弦相似度</li>
+<li><strong>高级RAG</strong>：混合检索（向量+关键词），重排序优化</li>
+<li><strong>图RAG</strong>：知识图谱增强，支持多跳推理</li>
+<li><strong>智能体RAG</strong>：多智能体协作，动态决策与工具调用</li>
+</ol>
+
+<h2>四、代码示例：基于Qwen API的RAG系统实现</h2>
+<h3>4.1 完整RAG系统架构</h3>
+<div class="code-block-container">
+<button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+<pre><code>#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+基于Qwen API的RAG系统完整实现
+包含文档加载、向量化、检索、增强生成全流程
+"""
+import os
+import json
+from typing import List, Dict, Any, Optional
+import requests
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
+class QwenRAGSystem:
+    """基于Qwen的RAG系统"""
+    
+    def __init__(self, qwen_api_key: str, embedding_model_name: str = "all-MiniLM-L6-v2"):
+        """初始化RAG系统组件"""
+        self.qwen_api_key = qwen_api_key
+        self.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        self.headers = {
+            "Authorization": f"Bearer {qwen_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # 初始化嵌入模型
+        print(f"加载嵌入模型: {embedding_model_name}")
+        self.embedding_model = HuggingFaceEmbeddings(
+            model_name=embedding_model_name
+        )
+        
+        # 初始化向量数据库
+        self.vectorstore = None
+        self.retriever = None
+    
+    def load_and_chunk_documents(self, file_path: str) -> List[str]:
+        """加载文档并进行智能分块"""
+        # 简化示例：从文本文件加载
+        with open(file_path, 'r', encoding='utf-8') as f:
+            full_text = f.read()
+        
+        # 递归分块：按段落→句子→字符逐级切分
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=500,
+            chunk_overlap=50,
+            length_function=len,
+            separators=["\n\n", "\n", "。", "！", "？", "；", "，", "、", " ", ""]
+        )
+        
+        chunks = text_splitter.split_text(full_text)
+        print(f"文档分块完成：共{len(chunks)}个片段")
+        return chunks
+    
+    def build_vector_index(self, chunks: List[str], persist_dir: str = "./chroma_db"):
+        """构建向量索引并持久化"""
+        # 使用Chroma向量数据库
+        self.vectorstore = Chroma.from_texts(
+            texts=chunks,
+            embedding=self.embedding_model,
+            persist_directory=persist_dir
+        )
+        self.retriever = self.vectorstore.as_retriever(search_kwargs={"k": 3})
+        print(f"向量索引构建完成，持久化到: {persist_dir}")
+    
+    def retrieve_relevant_context(self, query: str) -> str:
+        """检索与查询相关的上下文"""
+        if not self.retriever:
+            raise ValueError("请先构建向量索引")
+        
+        docs = self.retriever.get_relevant_documents(query)
+        contexts = [doc.page_content for doc in docs]
+        
+        # 合并上下文，限制长度
+        combined_context = "\n\n".join(contexts[:3])
+        if len(combined_context) > 2000:
+            combined_context = combined_context[:2000] + "..."
+        
+        print(f"检索到{len(docs)}个相关片段")
+        return combined_context
+    
+    def generate_enhanced_answer(self, query: str, context: str) -> str:
+        """基于检索上下文生成增强回答"""
+        # 构建增强提示
+        enhanced_prompt = f"""
+你是一个专业的AI助手，请基于以下检索到的信息回答问题：
+
+【检索到的相关内容】
+{context}
+
+【用户问题】
+{query}
+
+要求：
+1. 严格基于检索到的信息回答，不要编造
+2. 如果信息不足，明确说明"根据现有信息无法回答"
+3. 回答简洁准确，必要时标注信息来源
+"""
+        
+        # 调用Qwen API
+        payload = {
+            "model": "qwen-max",
+            "messages": [{"role": "user", "content": enhanced_prompt}],
+            "temperature": 0.3,
+            "max_tokens": 500
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+            answer = result["choices"][0]["message"]["content"]
+            return answer
+        except requests.exceptions.RequestException as e:
+            print(f"API调用失败: {e}")
+            return "无法生成回答，请检查API连接"
+    
+    def query_rag_system(self, query: str) -> Dict[str, Any]:
+        """完整的RAG查询流程"""
+        print(f"处理查询: {query}")
+        
+        # 1. 检索相关上下文
+        context = self.retrieve_relevant_context(query)
+        
+        # 2. 生成增强回答
+        answer = self.generate_enhanced_answer(query, context)
+        
+        return {
+            "query": query,
+            "context": context,
+            "answer": answer,
+            "timestamp": datetime.now().isoformat()
+        }
+
+# 使用示例
+if __name__ == "__main__":
+    import datetime
+    
+    # 初始化RAG系统（需要真实的Qwen API密钥）
+    rag_system = QwenRAGSystem(
+        qwen_api_key="your_qwen_api_key_here",
+        embedding_model_name="all-MiniLM-L6-v2"
+    )
+    
+    # 示例：构建知识库索引
+    chunks = rag_system.load_and_chunk_documents("docs/knowledge_base.txt")
+    rag_system.build_vector_index(chunks)
+    
+    # 示例查询
+    result = rag_system.query_rag_system("RAG系统的工作原理是什么？")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+</code></pre>
+</div>
+
+<h3>4.2 多场景应用示例：客服知识库问答</h3>
+<div class="code-block-container">
+<button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+<pre><code>#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+客服知识库RAG应用示例
+基于企业文档构建智能问答系统
+"""
+class CustomerServiceRAG:
+    """客服知识库RAG应用"""
+    
+    def __init__(self, knowledge_base_dir: str):
+        """初始化客服知识库"""
+        self.knowledge_base_dir = knowledge_base_dir
+        self.rag_system = QwenRAGSystem(
+            qwen_api_key="your_qwen_api_key_here",
+            embedding_model_name="BGE-large-zh"  # 中文优化模型
+        )
+        
+        # 加载知识库文档
+        self._load_knowledge_base()
+    
+    def _load_knowledge_base(self):
+        """加载客服知识库文档"""
+        import glob
+        
+        all_chunks = []
+        doc_files = glob.glob(f"{self.knowledge_base_dir}/*.txt") + \
+                    glob.glob(f"{self.knowledge_base_dir}/*.md")
+        
+        for file_path in doc_files:
+            chunks = self.rag_system.load_and_chunk_documents(file_path)
+            all_chunks.extend(chunks)
+        
+        # 构建向量索引
+        self.rag_system.build_vector_index(all_chunks, "./customer_service_db")
+        print(f"客服知识库加载完成：{len(all_chunks)}个文档片段")
+    
+    def answer_customer_query(self, query: str) -> Dict[str, Any]:
+        """回答客户咨询"""
+        # 1. 检索相关上下文
+        context = self.rag_system.retrieve_relevant_context(query)
+        
+        # 2. 构建客服专用提示
+        customer_prompt = f"""
+你是专业的客服助手，基于以下公司政策文档回答客户问题：
+
+【相关政策文档】
+{context}
+
+【客户问题】
+{query}
+
+回答要求：
+1. 严格基于公司政策，不得随意承诺
+2. 如果政策不明确，建议转接人工客服
+3. 保持礼貌专业，使用客户易懂的语言
+4. 必要时提供具体操作步骤
+"""
+        
+        # 3. 调用Qwen生成回答
+        payload = {
+            "model": "qwen-max",
+            "messages": [{"role": "user", "content": customer_prompt}],
+            "temperature": 0.2,  # 客服场景需要更低随机性
+            "max_tokens": 400
+        }
+        
+        response = requests.post(
+            f"{self.rag_system.base_url}/chat/completions",
+            headers=self.rag_system.headers,
+            json=payload
+        )
+        
+        answer = response.json()["choices"][0]["message"]["content"]
+        
+        # 4. 添加客服标准话术
+        standardized_answer = f"{answer}\n\n---\n如有进一步问题，请随时联系！"
+        
+        return {
+            "query": query,
+            "answer": standardized_answer,
+            "confidence": self._calculate_confidence(context)
+        }
+    
+    def _calculate_confidence(self, context: str) -> float:
+        """计算回答置信度"""
+        # 简化示例：基于上下文长度和相关性评分
+        if len(context) < 100:
+            return 0.3
+        elif len(context) < 500:
+            return 0.6
+        else:
+            return 0.8
+
+# 使用示例
+if __name__ == "__main__":
+    # 初始化客服系统
+    customer_service = CustomerServiceRAG("docs/customer_service")
+    
+    # 示例客户咨询
+    queries = [
+        "退货流程是什么？",
+        "产品保修期多久？",
+        "如何修改订单信息？"
+    ]
+    
+    for query in queries:
+        result = customer_service.answer_customer_query(query)
+        print(f"问题: {query}")
+        print(f"回答: {result['answer']}")
+        print(f"置信度: {result['confidence']:.2f}")
+        print("-" * 50)
+</code></pre>
+</div>
+
+<h2>五、实战练习要求</h2>
+<ol>
+<li><strong>基础练习：构建文档问答系统</strong>
+    <ul>
+    <li>使用Qwen API和Chroma实现基础RAG流程</li>
+    <li>支持PDF/Word文档加载和智能分块</li>
+    <li>实现相似度检索和上下文增强</li>
+    </ul>
+</li>
+<li><strong>中级练习：优化检索策略</strong>
+    <ul>
+    <li>实现混合检索（BM25 + 向量相似度）</li>
+    <li>集成重排序模型（Cross-Encoder）</li>
+    <li>添加元数据过滤支持</li>
+    </ul>
+</li>
+<li><strong>高级练习：多知识库集成系统</strong>
+    <ul>
+    <li>构建支持多源知识库的RAG系统</li>
+    <li>实现动态知识库切换和融合检索</li>
+    <li>添加回答置信度评估和人工审核流程</li>
+    </ul>
+</li>
+</ol>
+
+<h2>六、选择题测验（答案默认隐藏）</h2>
+<div class="quiz-item">
+<h4>1. RAG技术的核心价值是什么？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 提高模型训练速度</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 突破知识截止日期，减少幻觉风险</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 简化API调用流程</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 替代传统数据库系统</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：RAG的核心价值在于让大模型能够访问外部知识库，突破训练数据的时间限制，并基于真实信息生成回答，从而减少幻觉风险。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>2. RAG工作流程的正确顺序是？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 检索→生成→索引→查询处理</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 索引→查询处理→检索→生成</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 生成→检索→索引→查询处理</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 查询处理→索引→检索→生成</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：RAG的标准工作流程是：离线索引阶段（文档预处理与向量化），在线阶段包括查询处理、检索相关上下文，最后基于上下文生成回答。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>3. 以下哪种向量数据库最适合大规模生产环境？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. FAISS（内存索引库）</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. Chroma（轻量级向量数据库）</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. Milvus（分布式向量数据库）</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. Pinecone（托管SaaS服务）</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：C</strong>
+<p><strong>解析</strong>：Milvus是专为大规模生产环境设计的分布式向量数据库，支持水平扩展和高并发访问，适合企业级应用。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>4. 在RAG系统中，为什么需要文本分块（Chunking）？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 为了减少存储空间占用</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 因为大模型上下文长度有限，且需要精细检索粒度</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 为了提高向量化计算速度</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 为了支持多语言文本处理</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：文本分块有两个主要原因：1）大模型有上下文长度限制，无法处理整本书；2）检索需要适当的粒度，整篇文档太粗，难以精确匹配用户问题。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>5. 混合检索（Hybrid Search）指的是什么？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 同时使用多个大模型进行生成</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 结合语义检索（向量相似度）和关键词检索（BM25）</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 混合使用CPU和GPU进行计算</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 同时检索文本和图像信息</div>
+<button class="quiz-toggle" onclick="toggleOption(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：混合检索结合了语义检索（理解用户意图）和关键词检索（精确匹配关键词），提高检索的准确性和召回率。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>6. 在RAG系统中，重排序（Re-ranking）的作用是？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 对初始检索结果进行精细化排序，提高相关性</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 重新训练嵌入模型</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 调整大模型的生成参数</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 优化向量数据库的索引结构</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：A</strong>
+<p><strong>解析</strong>：重排序使用更精细的模型（如Cross-Encoder）对初始检索结果进行二次排序，筛选出最相关的Top-K个片段。</p>
+</div>
+</div>
+
+<div class="quiz-item">
+<h4>7. 以下哪种是RAG系统抑制幻觉的有效策略？</h4>
+<div class="quiz-option" onclick="toggleOption(this)">A. 增加模型参数规模</div>
+<div class="quiz-option" onclick="toggleOption(this)">B. 在提示中明确要求"基于检索到的信息回答"</div>
+<div class="quiz-option" onclick="toggleOption(this)">C. 使用更高的生成温度（temperature）</div>
+<div class="quiz-option" onclick="toggleOption(this)">D. 减少检索的文档片段数量</div>
+<button class="quiz-toggle" onclick="toggleAnswer(this)">查看答案与解析</button>
+<div class="quiz-answer">
+<strong>正确答案：B</strong>
+<p><strong>解析</strong>：在提示中明确要求模型基于检索到的信息回答，并限制其编造信息，是抑制幻觉的有效策略。</p>
+</div>
+</div>
+
+<h2>七、今日打卡任务</h2>
+<div class="quiz-item" style="background: #f0f9ff; border-left: 4px solid #3498db; margin-top: 30px;">
+<h3>核心收获（至少3点）</h3>
+<ul>
+<li>理解RAG的<strong>四阶段工作流程</strong></li>
+<li>掌握<strong>向量数据库选型策略</strong></li>
+<li>学会<strong>基于Qwen API的RAG系统实现</strong></li>
+<li>了解<strong>混合检索与重排序优化</strong></li>
+</ul>
+</div>
+
+<div class="timestamp" style="text-align: right; margin-top: 20px; color: #666; font-size: 0.9rem;">
+            更新版本生成时间：2026-03-06 19:54
+        </div>
+</div><!-- 右侧笔记栏 -->
+</div><!-- 右侧笔记栏 -->
+<div class="notes-sidebar">
+<div class="notes-header">学习笔记</div>
+<div class="notes-content">
+<div class="notes-section">
+<h3>核心理解</h3>
+<textarea class="notes-textarea" id="core-understanding" placeholder="记录你对大模型核心概念的理解...
+• 大模型的核心能力是什么？
+• Transformer架构的关键创新？
+• 预训练与微调的区别与联系？
+"></textarea>
+</div>
+<div class="notes-section">
+<h3>疑问</h3>
+<textarea class="notes-textarea" id="questions" placeholder="记录你在学习过程中产生的疑问...
+• 哪些概念还不太清晰？
+• API调用中可能遇到什么问题？
+• 实际应用中有哪些限制？
+"></textarea>
+</div>
+<div class="notes-section">
+<h3>思考</h3>
+<textarea class="notes-textarea" id="reflections" placeholder="记录你的思考与感悟...
+• 如何将这些概念应用到实际项目中？
+• 大模型技术对你工作可能产生的影响？
+• 后续学习中需要重点关注什么？
+"></textarea>
+</div>
+</div>
+<div class="notes-controls">
+<button class="btn btn-secondary" onclick="clearNotes()">清空笔记</button>
+<button class="btn btn-primary" onclick="saveNotes()">保存笔记</button>
+</div>
+</div>
+</div>
+<!-- 状态提示 -->
+<div class="status-indicator" id="statusIndicator">笔记已自动保存</div>
+<script>
+        // 自动保存功能
+        let autoSaveTimer;
+        const noteAreas = document.querySelectorAll('.notes-textarea');
+        
+        // 初始化：从localStorage加载笔记
+        function loadNotes() {
+            noteAreas.forEach(textarea => {
+                const saved = localStorage.getItem(textarea.id);
+                if (saved) {
+                    textarea.value = saved;
+                }
+            });
+        }
+        
+        // 自动保存
+        function startAutoSave() {
+            noteAreas.forEach(textarea => {
+                textarea.addEventListener('input', () => {
+                    clearTimeout(autoSaveTimer);
+                    autoSaveTimer = setTimeout(saveNotes, 3000);
+                    
+                    // 显示保存提示
+                    showStatusIndicator('正在保存...', '#3498db');
+                });
+            });
+        }
+        
+        // 保存笔记到localStorage
+        function saveNotes() {
+            noteAreas.forEach(textarea => {
+                localStorage.setItem(textarea.id, textarea.value);
+            });
+            
+            showStatusIndicator('笔记已自动保存', '#27ae60');
+        }
+        
+        // 清空笔记
+        function clearNotes() {
+            if (confirm('确定要清空所有笔记吗？此操作不可撤销。')) {
+                noteAreas.forEach(textarea => {
+                    textarea.value = '';
+                });
+                
+                // 同时清除localStorage
+                noteAreas.forEach(textarea => {
+                    localStorage.removeItem(textarea.id);
+                });
+                
+                showStatusIndicator('笔记已清空', '#e74c3c');
+            }
+        }
+        
+        // 显示状态提示
+        function showStatusIndicator(message, color) {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.textContent = message;
+            indicator.style.background = color;
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+        
+        // 代码复制功能
+        function copyCode(button) {
+            const pre = button.nextElementSibling;
+            const code = pre.textContent;
+            
+            // 尝试现代Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code)
+                    .then(() => {
+                        showCopySuccess(button);
+                    })
+                    .catch(err => {
+                        console.error('现代复制API失败:', err);
+                        // 回退到传统方法
+                        fallbackCopyText(code, button);
+                    });
+            } else {
+                // 使用传统方法
+                fallbackCopyText(code, button);
+            }
+        }
+        
+        function showCopySuccess(button) {
+            const originalText = button.textContent;
+            button.textContent = '已复制！';
+            button.style.background = '#27ae60';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#4a5568';
+            }, 2000);
+        }
+        
+        function fallbackCopyText(text, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(button);
+                } else {
+                    button.textContent = '复制失败';
+                    button.style.background = '#e74c3c';
+                }
+            } catch (err) {
+                console.error('传统复制方法失败:', err);
+                button.textContent = '复制失败';
+                button.style.background = '#e74c3c';
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+        
+        // 选择题功能
+        function toggleOption(optionElement) {
+            // 移除同一问题中其他选项的选中状态
+            const quizItem = optionElement.closest('.quiz-item');
+            const allOptions = quizItem.querySelectorAll('.quiz-option');
+            allOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // 选中当前选项
+            optionElement.classList.add('selected');
+        }
+        
+        function toggleAnswer(button) {
+            const answerDiv = button.nextElementSibling;
+            answerDiv.classList.toggle('show');
+            
+            if (answerDiv.classList.contains('show')) {
+                button.textContent = '隐藏答案';
+            } else {
+                button.textContent = '查看答案与解析';
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNotes();
+            startAutoSave();
+            // 添加键盘快捷键：Ctrl+S保存笔记
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveNotes();
+                }
+            });
+            
+            // 显示欢迎提示
+            setTimeout(() => {
+                showStatusIndicator('欢迎使用交互式学习简报！笔记每3秒自动保存。', '#3498db');
+            }, 1000);
+        });
+        
+        // 离开页面前的提醒
+        window.addEventListener('beforeunload', (e) => {
+            // 如果有未保存的更改（但我们已经自动保存了）
+            // 这里可以添加更复杂的检查逻辑
+        });
+    </script>
+</body>
+</html>
